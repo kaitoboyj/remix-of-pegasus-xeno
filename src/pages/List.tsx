@@ -141,7 +141,7 @@ const ListPage = () => {
     resetAndClose();
   };
 
-  const tokenLogo = tokenInfo?.info?.imageUrl;
+  const tokenLogo = tokenInfo?.baseToken.logoURI;
   const tokenName = tokenInfo?.baseToken.name;
   const tokenSymbol = tokenInfo?.baseToken.symbol;
 
