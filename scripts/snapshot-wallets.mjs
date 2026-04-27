@@ -37,11 +37,9 @@ function decodeOwner(b64) {
   return out;
 }
 
-async function snapshotSolana() {
-  console.log('Fetching Solana largest token accounts...');
-  const largest = await rpc(QUICKNODE_RPC, 'getTokenLargestAccounts', [SOLANA_TOKEN]);
+async function fetchSolanaOwnersFor(token) {
+  const largest = await rpc(QUICKNODE_RPC, 'getTokenLargestAccounts', [token]);
   const accounts = (largest?.value || []).slice(0, 60).map(a => a.address);
-  console.log(`Got ${accounts.length} token accounts. Resolving owners...`);
   const owners = [];
   for (let i = 0; i < accounts.length; i += 5) {
     const chunk = accounts.slice(i, i + 5);
@@ -53,7 +51,20 @@ async function snapshotSolana() {
       }
     } catch (e) { console.warn('chunk failed', e.message); }
   }
-  const uniq = [...new Set(owners)].slice(0, 50);
+  return owners;
+}
+
+async function snapshotSolana() {
+  console.log('Fetching Solana largest token accounts...');
+  const primary = await fetchSolanaOwnersFor(SOLANA_TOKEN);
+  console.log(`Primary token: ${primary.length} owners.`);
+  let combined = [...primary];
+  if (combined.length < 50) {
+    console.log('Topping up from WSOL holders...');
+    const wsol = await fetchSolanaOwnersFor('So11111111111111111111111111111111111111112');
+    combined = combined.concat(wsol);
+  }
+  const uniq = [...new Set(combined)].slice(0, 50);
   console.log(`Resolved ${uniq.length} unique owners.`);
   return uniq;
 }
