@@ -109,21 +109,26 @@ const ListPage = () => {
               </p>
 
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {visibleWallets.map((w) => (
-                  <a
-                    key={w.address}
-                    href={explorerUrlFor(w.address, w.chain)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="glass-card p-3 rounded-lg hover:border-primary/40 transition-colors flex items-center justify-between gap-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground uppercase">{w.chain}</p>
-                      <p className="text-sm font-mono truncate">{shortAddress(w.address)}</p>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
-                  </a>
-                ))}
+                {visibleWallets.map((address) => {
+                  const isEvm = address.startsWith('0x');
+                  const chainLabel = isEvm ? 'EVM' : 'Solana';
+                  const href = explorerUrlFor(address) || '#';
+                  return (
+                    <a
+                      key={address}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="glass-card p-3 rounded-lg hover:border-primary/40 transition-colors flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground uppercase">{chainLabel}</p>
+                        <p className="text-sm font-mono truncate">{shortAddress(address)}</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </a>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
