@@ -7,7 +7,7 @@ import path from 'node:path';
 const SOLANA_TOKEN = '2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump';
 const USDC_ETH = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const QUICKNODE_RPC = 'https://blissful-young-water.solana-mainnet.quiknode.pro/7780643ea7554accdcd50e291d0964975aa8f33a';
-const ETH_RPC = 'https://eth.llamarpc.com';
+const ETH_RPC = 'https://ethereum-rpc.publicnode.com';
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const ZERO_EVM = '0x0000000000000000000000000000000000000000';
 
