@@ -190,6 +190,22 @@ export const Navigation = () => {
             )}
           </Link>
 
+          <Link
+            to="/list"
+            className={`text-sm font-semibold transition-all relative pb-1 ${
+              location.pathname === '/list'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Get Listed
+            {location.pathname === '/list' && (
+              <motion.div
+                layoutId="underline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary"
+              />
+            )}
+          </Link>
 
           <Link
             to="/market-making"
@@ -292,6 +308,17 @@ export const Navigation = () => {
               }`}
             >
               Market Making
+            </Link>
+            <Link
+              to="/list"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/list'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Get Listed
             </Link>
             {/* Mobile chain indicator with logo */}
             {(isEVMConnected && evmChain) && (
