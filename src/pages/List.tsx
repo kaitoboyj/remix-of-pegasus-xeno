@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigation } from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,12 @@ const EMPTY_DRAFT: ListingDraft = {
 };
 
 const ListPage = () => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  // Auto-open the listing wizard whenever the user lands on /list.
+  useEffect(() => {
+    setOpen(true);
+  }, []);
   const [step, setStep] = useState<WizardStep>('contract');
   const [draft, setDraft] = useState<ListingDraft>(EMPTY_DRAFT);
   const [tokenInfo, setTokenInfo] = useState<DexScreenerTokenInfo | null>(null);
@@ -163,30 +168,6 @@ const ListPage = () => {
             Get Listed
           </button>
         </div>
-      </div>
-
-      <div className="container mx-auto px-4 pt-32">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="glass-card border-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-2xl">Token Listings</CardTitle>
-                <Badge variant="secondary" className="gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Verified projects
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Browse tokens listed on the Pegswap dashboard. Want yours here? Click{' '}
-                <span className="text-primary font-semibold">Get Listed</span> at the top.
-              </p>
-              <div className="rounded-lg border border-white/10 p-6 text-center text-sm text-muted-foreground">
-                No tokens listed yet. Be the first to apply.
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
 
       {/* Listing wizard */}
