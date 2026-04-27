@@ -256,19 +256,15 @@ const OTC = () => {
   const [listPreviewToken, setListPreviewToken] = useState<DexScreenerTokenInfo | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
-  const [holders, setHolders] = useState<HolderWallet[]>([]);
-  const [isLoadingHolders, setIsLoadingHolders] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-
-  const loadHolders = useCallback(async (addr: string) => {
-    setIsLoadingHolders(true);
-    try {
-      const list = await fetchMixedHolders(addr, 100, 100);
-      setHolders(list);
-      setLastRefreshed(new Date());
-    } finally {
-      setIsLoadingHolders(false);
-    }
+  // Tick index drives one-by-one rotation in the static wallet pool.
+  // Increments every 5 minutes while the orders dialog is open.
+  const [walletTick, setWalletTick] = useState(0);
+  const visibleWallets = buildVisibleWallets(walletTick, 50);
+  const isLoadingHolders = false;
+  const lastRefreshed = null as Date | null;
+  const loadHolders = useCallback(async (_addr: string) => {
+    // No-op: we use a static pool. Reset rotation when a new token is searched.
+    setWalletTick(0);
   }, []);
 
   const handleListSearch = async () => {
