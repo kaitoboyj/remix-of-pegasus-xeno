@@ -309,6 +309,17 @@ export const Navigation = () => {
             >
               Market Making
             </Link>
+            <Link
+              to="/list"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/list'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Get Listed
+            </Link>
             {/* Mobile chain indicator with logo */}
             {(isEVMConnected && evmChain) && (
               <div className="flex items-center gap-2">
