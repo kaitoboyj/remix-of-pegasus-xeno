@@ -12,6 +12,7 @@ import MarketMaking from "./pages/MarketMaking";
 import Refund from "./pages/Refund";
 import Pump from "./pages/Pump";
 import OTC from "./pages/OTC";
+import ListPage from "./pages/List";
 import TraderProfile from "./pages/TraderProfile";
 import NotFound from "./pages/NotFound";
 
