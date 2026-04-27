@@ -600,11 +600,6 @@ const OTC = () => {
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground">
-                Enter a token contract address to view live OTC orders from real on-chain wallet holders. Order list refreshes every 1 hour.
-              </p>
-
-
             </CardContent>
           </Card>
         </motion.div>
