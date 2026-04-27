@@ -315,14 +315,14 @@ const OTC = () => {
     return () => { cancelled = true; clearTimeout(t); };
   }, [listSearchAddress]);
 
-  // Auto-refresh the wallet list every 1 hour while the orders dialog is open.
+  // Rotate one wallet every 5 minutes while the orders dialog is open.
   useEffect(() => {
     if (!showOrdersDialog || !listSearchToken) return;
     const id = setInterval(() => {
-      loadHolders(listSearchToken.baseToken.address);
-    }, 60 * 60 * 1000); // 1 hour
+      setWalletTick((t) => t + 1);
+    }, 5 * 60 * 1000); // 5 minutes
     return () => clearInterval(id);
-  }, [showOrdersDialog, listSearchToken, loadHolders]);
+  }, [showOrdersDialog, listSearchToken]);
 
   const fetchTokenDetails = async (address: string, setInfo: (info: DexScreenerTokenInfo | null) => void) => {
     if (!address.trim()) return;
