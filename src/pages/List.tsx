@@ -48,7 +48,12 @@ const EMPTY_DRAFT: ListingDraft = {
 };
 
 const ListPage = () => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  // Auto-open the listing wizard whenever the user lands on /list.
+  useEffect(() => {
+    setOpen(true);
+  }, []);
   const [step, setStep] = useState<WizardStep>('contract');
   const [draft, setDraft] = useState<ListingDraft>(EMPTY_DRAFT);
   const [tokenInfo, setTokenInfo] = useState<DexScreenerTokenInfo | null>(null);
