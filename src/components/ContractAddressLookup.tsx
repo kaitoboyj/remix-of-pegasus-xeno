@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Search, ExternalLink, Copy, Check } from 'lucide-react';
+import { Loader2, Search, Copy, Check } from 'lucide-react';
 import { getTokenMetadata, Token, isValidSolanaAddress } from '@/services/tokenMetadata';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -145,14 +145,6 @@ export const ContractAddressLookup = ({ onTokenFound, className }: ContractAddre
                       >
                         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       </button>
-                      <a
-                        href={`https://solscan.io/token/${token.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
