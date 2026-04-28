@@ -1131,9 +1131,6 @@ const OTC = () => {
           {listSearchToken && (Number(listSearchToken.marketCap || listSearchToken.fdv || 0) < 500_000) ? (
             <div className="flex-1 overflow-y-auto rounded-xl border border-white/10 p-6 flex flex-col items-center justify-center text-center gap-4">
               <div className="text-base font-semibold">This token is not listed on any OTC DEX</div>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Tokens with a market cap below $500,000 aren't eligible for OTC orders yet. List it on Pegswap OTC to unlock trading.
-              </p>
               <Link
                 to="/list"
                 onClick={() => setShowOrdersDialog(false)}
