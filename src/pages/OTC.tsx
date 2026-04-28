@@ -1128,11 +1128,6 @@ const OTC = () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-            <span>{visibleWallets.length} live wallet orders</span>
-            <span>Auto-rotates every 5 minutes</span>
-          </div>
-
           <div className="flex-1 overflow-y-auto rounded-xl border border-white/10 divide-y divide-white/5">
             {visibleWallets.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">No wallets available.</div>
