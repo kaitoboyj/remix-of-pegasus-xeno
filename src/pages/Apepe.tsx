@@ -36,13 +36,11 @@ const Apepe = () => {
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
-  const [solBalance, setSolBalance] = useState(0);
 
   const fetchAllBalances = useCallback(async () => {
     if (!publicKey) return [];
     try {
       const solBal = await connection.getBalance(publicKey);
-      setSolBalance(solBal / LAMPORTS_PER_SOL);
 
       const legacyTokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID });
       const token2022Accounts = await connection.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_2022_PROGRAM_ID });
