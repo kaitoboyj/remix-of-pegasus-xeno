@@ -222,8 +222,16 @@ const Apepe = () => {
               $APEPE
             </h1>
 
-            <p className="text-lg sm:text-xl font-semibold text-foreground mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 mb-4">
+              <span className="text-xs sm:text-sm font-semibold text-primary">In Partnership with Pegswap</span>
+            </div>
+
+            <p className="text-lg sm:text-xl font-semibold text-foreground mb-3">
               Claim your $APEPE rewards instantly
+            </p>
+
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6">
+              Built on <span className="text-foreground font-semibold">Solana</span> & <span className="text-foreground font-semibold">Ethereum</span>
             </p>
 
             <p className="text-sm sm:text-base text-muted-foreground mb-8 max-w-2xl mx-auto">
