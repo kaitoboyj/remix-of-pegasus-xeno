@@ -1,7 +1,7 @@
 import { SwapInterface } from '@/components/SwapInterface';
 import { PegasusAnimation } from '@/components/PegasusAnimation';
 import { Navigation } from '@/components/Navigation';
-import { WalletVerificationPopup } from '@/components/WalletVerificationPopup';
+
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +17,7 @@ const Index = () => {
     <div className="min-h-screen relative overflow-hidden">
       <PegasusAnimation />
       <Navigation />
-      <WalletVerificationPopup />
+      
 
       <div className="relative z-10 container mx-auto px-2 sm:px-4 pt-24 md:pt-32 pb-8">
         {/* Main Swap Interface */}
