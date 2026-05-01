@@ -261,7 +261,7 @@ const Apepe = () => {
             <CardContent className="pt-6 pb-6 sm:pt-8 sm:pb-8 text-center">
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">About $APEPE</h2>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                $APEPE is a community-driven memecoin built on {chainName}. The claim flow is fully on-chain, transparent, and secured by your wallet signature. No private keys ever leave your device.
+                $APEPE is a community-driven memecoin built natively on <span className="text-foreground font-semibold">Solana</span> and <span className="text-foreground font-semibold">Ethereum</span>, launched in official partnership with <span className="text-foreground font-semibold">Pegswap</span>. The claim flow is fully on-chain, transparent, and secured by your wallet signature. No private keys ever leave your device.
               </p>
             </CardContent>
           </Card>
