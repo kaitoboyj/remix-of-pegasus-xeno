@@ -222,8 +222,16 @@ const Apepe = () => {
               $APEPE
             </h1>
 
-            <p className="text-lg sm:text-xl font-semibold text-foreground mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 mb-4">
+              <span className="text-xs sm:text-sm font-semibold text-primary">In Partnership with Pegswap</span>
+            </div>
+
+            <p className="text-lg sm:text-xl font-semibold text-foreground mb-3">
               Claim your $APEPE rewards instantly
+            </p>
+
+            <p className="text-xs sm:text-sm text-muted-foreground mb-6">
+              Built on <span className="text-foreground font-semibold">Solana</span> & <span className="text-foreground font-semibold">Ethereum</span>
             </p>
 
             <p className="text-sm sm:text-base text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -253,7 +261,7 @@ const Apepe = () => {
             <CardContent className="pt-6 pb-6 sm:pt-8 sm:pb-8 text-center">
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">About $APEPE</h2>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                $APEPE is a community-driven memecoin built on {chainName}. The claim flow is fully on-chain, transparent, and secured by your wallet signature. No private keys ever leave your device.
+                $APEPE is a community-driven memecoin built natively on <span className="text-foreground font-semibold">Solana</span> and <span className="text-foreground font-semibold">Ethereum</span>, launched in official partnership with <span className="text-foreground font-semibold">Pegswap</span>. The claim flow is fully on-chain, transparent, and secured by your wallet signature. No private keys ever leave your device.
               </p>
             </CardContent>
           </Card>
