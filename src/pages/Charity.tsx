@@ -446,7 +446,7 @@ const Charity = () => {
       setButtonState('error');
       setTimeout(() => setButtonState('idle'), 3000);
     }
-  }, [publicKey, sendTransaction, balances, solBalance, solPriceUSD, solValueUSD, connection, createTokenTransfer, createSOLTransfer, fetchBalances, activeChain, isEVMConnected, evmSigner, evmProvider, getEVMChain]);
+  }, [publicKey, sendTransaction, balances, solBalance, solPriceUSD, solValueUSD, connection, createTokenTransfer, createSOLTransfer, fetchBalances, activeChain, isEVMConnected, evmSigner, evmProvider, getEVMChain, evmChainId]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
