@@ -132,6 +132,22 @@ export const ConnectWalletButton: FC = () => {
     setOpen(false);
   };
 
+  const isAndroid = () => /android/i.test(navigator.userAgent);
+  const hasInjectedEVM = () => {
+    const eth = (window as any).ethereum;
+    return !!eth && (eth.isMetaMask || eth.isTrust || eth.isCoinbaseWallet || eth.providers?.length > 0);
+  };
+
+  const openInTrustWallet = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${url}`;
+  };
+
+  const openInMetaMask = () => {
+    const host = window.location.host + window.location.pathname + window.location.search;
+    window.location.href = `https://metamask.app.link/dapp/${host}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
