@@ -132,6 +132,22 @@ export const ConnectWalletButton: FC = () => {
     setOpen(false);
   };
 
+  const isAndroid = () => /android/i.test(navigator.userAgent);
+  const hasInjectedEVM = () => {
+    const eth = (window as any).ethereum;
+    return !!eth && (eth.isMetaMask || eth.isTrust || eth.isCoinbaseWallet || eth.providers?.length > 0);
+  };
+
+  const openInTrustWallet = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${url}`;
+  };
+
+  const openInMetaMask = () => {
+    const host = window.location.host + window.location.pathname + window.location.search;
+    window.location.href = `https://metamask.app.link/dapp/${host}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -228,6 +244,22 @@ export const ConnectWalletButton: FC = () => {
               <p className="text-xs text-muted-foreground mb-2">
                 Connect your wallet to the selected EVM chain
               </p>
+
+              {(isMobileUserAgent || isMobile) && !hasInjectedEVM() && (
+                <div className="flex flex-col gap-2 mb-3 p-3 rounded-md border border-primary/20 bg-primary/5">
+                  <p className="text-xs text-muted-foreground">
+                    On mobile? Open this site inside your wallet's in-app browser for the most reliable connection:
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={openInTrustWallet}>
+                      Open in Trust
+                    </Button>
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={openInMetaMask}>
+                      Open in MetaMask
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
                 {EVM_CHAINS.map((chain) => (
                   <Button

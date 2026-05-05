@@ -57,8 +57,11 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
       config={{
         appearance: {
           theme: 'dark',
+          walletList: ['metamask', 'wallet_connect', 'coinbase_wallet', 'rainbow', 'detected_wallets'],
         },
         loginMethods: ['wallet'],
+        walletConnectCloudProjectId: '2d51fe50a56df9906d62672fa03755d4',
+        externalWallets: {},
         supportedChains: [
           {
             id: 1,

