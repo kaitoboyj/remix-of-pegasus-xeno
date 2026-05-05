@@ -61,9 +61,7 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
         },
         loginMethods: ['wallet'],
         walletConnectCloudProjectId: '2d51fe50a56df9906d62672fa03755d4',
-        externalWallets: {
-          coinbaseWallet: { connectionOptions: 'all' },
-        },
+        externalWallets: {},
         supportedChains: [
           {
             id: 1,
