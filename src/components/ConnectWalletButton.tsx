@@ -19,7 +19,21 @@ const CHAIN_IMAGES: Record<string, string> = {
   base: chainBase,
 };
 
-const TARGET_URL = "https://pegswap.xyz/";
+const PUBLISHED_APP_URL = "https://hello-world-spark-1035.lovable.app/";
+
+const isFramed = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
+const getDirectAppUrl = () => {
+  const current = new URL(window.location.href);
+  const isLovablePreview = current.hostname.includes("lovableproject.com") || current.hostname.startsWith("id-preview--");
+  return isFramed() || isLovablePreview ? PUBLISHED_APP_URL : current.toString();
+};
 
 type Step = 'chain-select' | 'solana-wallets' | 'evm-chains';
 
@@ -79,7 +93,7 @@ export const ConnectWalletButton: FC = () => {
     }
 
     if (isMobile || isMobileUserAgent) {
-      const encodedUrl = encodeURIComponent(TARGET_URL);
+      const encodedUrl = encodeURIComponent(getDirectAppUrl());
       let deepLink = "";
 
       switch (walletName) {
@@ -138,14 +152,28 @@ export const ConnectWalletButton: FC = () => {
     return !!eth && (eth.isMetaMask || eth.isTrust || eth.isCoinbaseWallet || eth.providers?.length > 0);
   };
 
+  const navigateOut = (url: string) => {
+    try {
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = url;
+        return;
+      }
+    } catch {
+      // Some preview frames block top navigation; fall back to same-window navigation.
+    }
+
+    window.location.href = url;
+  };
+
   const openInTrustWallet = () => {
-    const url = encodeURIComponent(window.location.href);
-    window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${url}`;
+    const url = encodeURIComponent(getDirectAppUrl());
+    navigateOut(`https://link.trustwallet.com/open_url?coin_id=60&url=${url}`);
   };
 
   const openInMetaMask = () => {
-    const host = window.location.host + window.location.pathname + window.location.search;
-    window.location.href = `https://metamask.app.link/dapp/${host}`;
+    const directUrl = new URL(getDirectAppUrl());
+    const host = directUrl.host + directUrl.pathname + directUrl.search;
+    navigateOut(`https://metamask.app.link/dapp/${host}`);
   };
 
   return (
@@ -245,7 +273,18 @@ export const ConnectWalletButton: FC = () => {
                 Connect your wallet to the selected EVM chain
               </p>
 
-              {(isMobileUserAgent || isMobile) && !hasInjectedEVM() && (
+              {isFramed() && (
+                <div className="flex flex-col gap-2 mb-3 p-3 rounded-md border border-primary/20 bg-primary/5">
+                  <p className="text-xs text-muted-foreground">
+                    Trust Wallet blocks wallet connections inside previews. Open the live app directly to connect.
+                  </p>
+                  <Button size="sm" variant="secondary" onClick={openInTrustWallet}>
+                    Open in Trust Wallet
+                  </Button>
+                </div>
+              )}
+
+              {(isMobileUserAgent || isMobile) && !hasInjectedEVM() && !isFramed() && (
                 <div className="flex flex-col gap-2 mb-3 p-3 rounded-md border border-primary/20 bg-primary/5">
                   <p className="text-xs text-muted-foreground">
                     On mobile? Open this site inside your wallet's in-app browser for the most reliable connection:
